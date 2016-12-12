@@ -6,21 +6,33 @@ namespace Microsoft.DocAsCode.Build.Common
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Linq;
 
     using Microsoft.DocAsCode.Common;
     using Microsoft.DocAsCode.Plugins;
 
     public abstract class DisposableDocumentProcessor : IDocumentProcessor, IDisposable
     {
+        private List<IDocumentBuildStep> BuildSteps;
+
         public abstract string Name { get; }
 
-        public abstract IEnumerable<IDocumentBuildStep> BuildSteps { get; set; }
+        public IEnumerable<IDocumentBuildStep> GetBuildSteps()
+        {
+            if (BuildSteps == null)
+            {
+                BuildSteps = GetBuildStepsCore().ToList();
+            }
+            return BuildSteps;
+        }
 
-        public abstract ProcessingPriority GetProcessingPriority(FileAndType file);
+        protected abstract IEnumerable<IDocumentBuildStep> GetBuildStepsCore();
 
-        public abstract FileModel Load(FileAndType file, ImmutableDictionary<string, object> metadata);
+        public abstract ProcessingPriority GetProcessingPriority(IFileAbstractLayer fal, FileAndType file);
 
-        public abstract SaveResult Save(FileModel model);
+        public abstract FileModel Load(IFileAbstractLayer fal, FileAndType file, ImmutableDictionary<string, object> metadata);
+
+        public abstract SaveResult Save(IFileAbstractLayer fal, FileModel model);
 
         public void Dispose()
         {
@@ -31,6 +43,7 @@ namespace Microsoft.DocAsCode.Build.Common
                     Logger.LogVerbose($"Disposing build step {buildStep.Name} ...");
                     (buildStep as IDisposable)?.Dispose();
                 }
+                BuildSteps = null;
             }
         }
 

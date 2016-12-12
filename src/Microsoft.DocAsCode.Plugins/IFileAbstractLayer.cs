@@ -19,9 +19,9 @@ namespace Microsoft.DocAsCode.Plugins
 
         bool Exists(string file);
 
-        FileStream OpenRead(string file);
+        Stream OpenRead(string file);
 
-        FileStream Create(string file);
+        Stream Create(string file);
 
         void Copy(string sourceFileName, string destFileName);
 

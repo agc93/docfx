@@ -342,6 +342,8 @@ namespace Microsoft.DocAsCode.Build.Engine
             }
         }
 
+        public IFileAbstractLayer FileAbstractLayer { get; set; }
+
         public void LogDiagnostic(string message, string file, string line)
         {
             Logger.LogDiagnostic(message, file: file, line: line);
