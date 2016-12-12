@@ -18,8 +18,8 @@ namespace Microsoft.DocAsCode.Plugins
         /// Add/remove/update all the files included in manifest
         /// </summary>
         /// <param name="manifest"></param>
-        /// <param name="outputFolder">The output folder where our static website will be placed</param>
+        /// <param name="fal">The output folder where our static website will be placed</param>
         /// <returns></returns>
-        Manifest Process(Manifest manifest, string outputFolder);
+        Manifest Process(Manifest manifest, IFileAbstractLayer fal);
     }
 }

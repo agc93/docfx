@@ -36,7 +36,10 @@ namespace Microsoft.DocAsCode.Plugins
         /// </summary>
         IDocumentProcessor Processor { get; }
 
+        IFileAbstractLayer FileAbstractLayer { get; }
+
         bool HasMetadataValidation { get; }
+
         void ValidateInputMetadata(string file, ImmutableDictionary<string, object> metadata);
 
         #region Log

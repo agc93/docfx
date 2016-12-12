@@ -3,19 +3,21 @@
 
 namespace Microsoft.DocAsCode.Plugins
 {
-    using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
 
     public interface IDocumentProcessor
     {
         string Name { get; }
-        IEnumerable<IDocumentBuildStep> BuildSteps { get; }
-        ProcessingPriority GetProcessingPriority(FileAndType file);
-        FileModel Load(FileAndType file, ImmutableDictionary<string, object> metadata);
+
+        IEnumerable<IDocumentBuildStep> GetBuildSteps();
+
+        ProcessingPriority GetProcessingPriority(IFileAbstractLayer fal, FileAndType file);
+
+        FileModel Load(IFileAbstractLayer fal, FileAndType file, ImmutableDictionary<string, object> metadata);
 
         // TODO: rename
-        SaveResult Save(FileModel model);
+        SaveResult Save(IFileAbstractLayer fal, FileModel model);
 
         void UpdateHref(FileModel model, IDocumentBuildContext context);
     }
