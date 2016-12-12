@@ -23,9 +23,9 @@ namespace Microsoft.DocAsCode.Build.Common
     public class ExtractSearchIndex : IPostProcessor
     {
         private static readonly Regex RegexWhiteSpace = new Regex(@"\s+", RegexOptions.Compiled);
+        public const string IndexFileName = "index.json";
 
         public string Name => nameof(ExtractSearchIndex);
-        public const string IndexFileName = "index.json";
 
         public ImmutableDictionary<string, object> PrepareMetadata(ImmutableDictionary<string, object> metadata)
         {
@@ -36,15 +36,18 @@ namespace Microsoft.DocAsCode.Build.Common
             return metadata;
         }
 
-        public Manifest Process(Manifest manifest, string outputFolder)
+        public Manifest Process(Manifest manifest, IFileAbstractLayer fal)
         {
-            if (outputFolder == null)
+            if (fal == null)
             {
                 throw new ArgumentNullException("Base directory can not be null");
             }
+            if (manifest?.Files == null)
+            {
+                return manifest;
+            }
             var indexData = new Dictionary<string, SearchIndexItem>();
-            var indexDataFilePath = Path.Combine(outputFolder, IndexFileName);
-            var htmlFiles = (from item in manifest.Files ?? Enumerable.Empty<ManifestItem>()
+            var htmlFiles = (from item in manifest.Files
                              from output in item.OutputFiles
                              where output.Key.Equals(".html", StringComparison.OrdinalIgnoreCase)
                              select output.Value.RelativePath).ToList();
@@ -56,19 +59,18 @@ namespace Microsoft.DocAsCode.Build.Common
             Logger.LogInfo($"Extracting index data from {htmlFiles.Count} html files");
             foreach (var relativePath in htmlFiles)
             {
-                var filePath = Path.Combine(outputFolder, relativePath);
                 var html = new HtmlDocument();
-                Logger.LogVerbose($"Extracting index data from {filePath}");
+                Logger.LogVerbose($"Extracting index data from {relativePath}");
 
-                if (File.Exists(filePath))
+                if (fal.Exists(relativePath))
                 {
                     try
                     {
-                        html.Load(filePath, Encoding.UTF8);
+                        html.Load(fal.OpenRead(relativePath), Encoding.UTF8);
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogWarning($"Warning: Can't load content from {filePath}: {ex.Message}");
+                        Logger.LogWarning($"Warning: Can't load content from {relativePath}: {ex.Message}");
                         continue;
                     }
                     var indexItem = ExtractItem(html, relativePath);
@@ -78,7 +80,11 @@ namespace Microsoft.DocAsCode.Build.Common
                     }
                 }
             }
-            JsonUtility.Serialize(indexDataFilePath, indexData, Formatting.Indented);
+            using (var indexDataFileStream = fal.Create(IndexFileName))
+            using (var sw = new StreamWriter(indexDataFileStream))
+            {
+                JsonUtility.Serialize(sw, indexData, Formatting.Indented);
+            }
 
             // add index.json to mainfest as resource file
             var manifestItem = new ManifestItem
@@ -89,10 +95,10 @@ namespace Microsoft.DocAsCode.Build.Common
             };
             manifestItem.OutputFiles.Add("resource", new OutputFileInfo
             {
-                RelativePath = PathUtility.MakeRelativePath(outputFolder, indexDataFilePath),
+                RelativePath = IndexFileName,
             });
 
-            manifest.Files?.Add(manifestItem);
+            manifest.Files.Add(manifestItem);
             return manifest;
         }
 
