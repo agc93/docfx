@@ -25,15 +25,15 @@ namespace Microsoft.DocAsCode.Build.Engine
             return metadata;
         }
 
-        public Manifest Process(Manifest manifest, string outputFolder)
+        public Manifest Process(Manifest manifest, IFileAbstractLayer fal)
         {
             if (manifest == null)
             {
                 throw new ArgumentNullException(nameof(manifest));
             }
-            if (outputFolder == null)
+            if (fal == null)
             {
-                throw new ArgumentNullException("Base directory can not be null");
+                throw new ArgumentNullException(nameof(fal));
             }
             foreach (var handler in Handlers)
             {
@@ -49,26 +49,31 @@ namespace Microsoft.DocAsCode.Build.Engine
                                       OutputFile = output.Value.RelativePath,
                                   })
             {
-                var filePath = Path.Combine(outputFolder, tuple.OutputFile);
-                if (!File.Exists(filePath))
+                if (!fal.Exists(tuple.OutputFile))
                 {
                     continue;
                 }
                 var document = new HtmlDocument();
                 try
                 {
-                    document.Load(filePath, Encoding.UTF8);
+                    using (var fs = fal.OpenRead(tuple.OutputFile))
+                    {
+                        document.Load(fs, Encoding.UTF8);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogWarning($"Warning: Can't load content from {filePath}: {ex.Message}");
+                    Logger.LogWarning($"Warning: Can't load content from {tuple.OutputFile}: {ex.Message}");
                     continue;
                 }
                 foreach (var handler in Handlers)
                 {
                     handler.HandleWithScopeWrapper(document, tuple.Item, tuple.InputFile, tuple.OutputFile);
                 }
-                document.Save(filePath, Encoding.UTF8);
+                using (var fs = fal.Create(tuple.OutputFile))
+                {
+                    document.Save(fs, Encoding.UTF8);
+                }
             }
             foreach (var handler in Handlers)
             {
