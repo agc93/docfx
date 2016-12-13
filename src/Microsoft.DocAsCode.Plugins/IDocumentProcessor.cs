@@ -3,14 +3,13 @@
 
 namespace Microsoft.DocAsCode.Plugins
 {
-    using System.Collections.Generic;
     using System.Collections.Immutable;
 
     public interface IDocumentProcessor
     {
         string Name { get; }
 
-        IEnumerable<IDocumentBuildStep> GetBuildSteps();
+        ImmutableArray<IDocumentBuildStep> BuildSteps { get; }
 
         ProcessingPriority GetProcessingPriority(IFileAbstractLayer fal, FileAndType file);
 

@@ -66,7 +66,7 @@ namespace Microsoft.DocAsCode.Build.Engine
             Logger.LogInfo($"{Processors.Count()} plug-in(s) loaded.");
             foreach (var processor in Processors)
             {
-                Logger.LogVerbose($"\t{processor.Name} with build steps ({string.Join(", ", from bs in processor.BuildSteps orderby bs.BuildOrder select bs.Name)})");
+                Logger.LogVerbose($"\t{processor.Name} with build steps ({string.Join(", ", from bs in processor.BuildSteps select bs.Name)})");
             }
             _postProcessors = GetPostProcessor(postProcessorNames);
             _intermediateFolder = intermediateFolder;

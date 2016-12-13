@@ -13,20 +13,35 @@ namespace Microsoft.DocAsCode.Build.Common
 
     public abstract class DisposableDocumentProcessor : IDocumentProcessor, IDisposable
     {
-        private List<IDocumentBuildStep> BuildSteps;
+        private ImmutableArray<IDocumentBuildStep>? _buildSteps;
+
+        public ImmutableArray<IDocumentBuildStep> BuildSteps
+        {
+            get
+            {
+                if (_buildSteps == null)
+                {
+                    _buildSteps = GetBuildSteps().ToImmutableArray();
+                }
+                return _buildSteps.Value;
+            }
+        }
 
         public abstract string Name { get; }
 
-        public IEnumerable<IDocumentBuildStep> GetBuildSteps()
+        protected virtual IEnumerable<IDocumentBuildStep> GetBuildSteps()
         {
-            if (BuildSteps == null)
+            if (InternalBuildSteps == null)
             {
-                BuildSteps = GetBuildStepsCore().ToList();
+                return Enumerable.Empty<IDocumentBuildStep>();
             }
-            return BuildSteps;
+            return from step in InternalBuildSteps
+                   where step != null
+                   orderby step.BuildOrder
+                   select step;
         }
 
-        protected abstract IEnumerable<IDocumentBuildStep> GetBuildStepsCore();
+        public virtual IEnumerable<IDocumentBuildStep> InternalBuildSteps { get; set; }
 
         public abstract ProcessingPriority GetProcessingPriority(IFileAbstractLayer fal, FileAndType file);
 
@@ -36,14 +51,14 @@ namespace Microsoft.DocAsCode.Build.Common
 
         public void Dispose()
         {
-            if (BuildSteps != null)
+            if (_buildSteps != null)
             {
-                foreach (var buildStep in BuildSteps)
+                foreach (var buildStep in _buildSteps.Value)
                 {
                     Logger.LogVerbose($"Disposing build step {buildStep.Name} ...");
                     (buildStep as IDisposable)?.Dispose();
                 }
-                BuildSteps = null;
+                _buildSteps = null;
             }
         }
 
